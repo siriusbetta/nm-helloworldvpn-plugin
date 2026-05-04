@@ -1,0 +1,13 @@
+[Unit]
+Description=HelloWorld VPN D-Bus Daemon
+After=dbus.service
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.NetworkManager.HelloWorldVPN
+ExecStart=/usr/libexec/helloworldvpn-daemon
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

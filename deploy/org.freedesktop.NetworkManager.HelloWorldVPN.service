@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.freedesktop.NetworkManager.HelloWorldVPN
+Exec=/usr/libexec/helloworldvpn-daemon
+User=root

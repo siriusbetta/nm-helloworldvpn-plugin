@@ -1,0 +1,10 @@
+[connection]
+id=helloworldVPN
+type=vpn
+autoconnect=false
+
+[vpn]
+service-type=org.freedesktop.NetworkManager.HelloWorldVPN
+
+[ipv4]
+method=auto
