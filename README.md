@@ -8,7 +8,7 @@ NetworkManager → C-плагин (.so) → D-Bus → Python-демон → VPN-
 
 ---
 
-## 📂 Структура файлов и пути размещения
+## 📂 Структура файлов и пути размещения (Manjaro/Arch)
 
 | Файл | Куда копировать | Права | Владелец | Назначение |
 |------|----------------|-------|----------|------------|
@@ -18,10 +18,17 @@ NetworkManager → C-плагин (.so) → D-Bus → Python-демон → VPN-
 | `org.freedesktop.NetworkManager.HelloWorldVPN.conf` | `/etc/dbus-1/system.d/` | `644` | `root:root` | Политика доступа к шине |
 | `helloworldvpn-daemon.service` | `/etc/systemd/system/` | `644` | `root:root` | Unit для systemd (опционально) |
 | `helloworldVPN.nmconnection` | `/etc/NetworkManager/system-connections/` | **`600`** | **`root:root`** | Профиль подключения ⚠️ |
+| `mock_vpn_client.py` | `/usr/local/bin/mock-vpn-client` | `755` | `root:root` | Тестовый VPN-клиент |
 
 ---
 
 ## 🛠️ Установка
+
+### 0. Установка зависимостей (Manjaro/Arch Linux)
+
+```bash
+sudo pacman -S networkmanager libnm python-gobject dbus systemd
+```
 
 ### 1. Сборка плагина
 ```bash
@@ -38,6 +45,10 @@ sudo chmod 644 /usr/lib/NetworkManager/VPN/libnm-vpn-plugin-helloworld.so
 # Python-демон
 sudo cp helloworldvpn-daemon.py /usr/local/bin/helloworldvpn-daemon
 sudo chmod 755 /usr/local/bin/helloworldvpn-daemon
+
+# Mock VPN клиент (для тестирования)
+sudo cp mock_vpn_client.py /usr/local/bin/mock-vpn-client
+sudo chmod 755 /usr/local/bin/mock-vpn-client
 
 # D-Bus сервис и политика
 sudo cp org.freedesktop.NetworkManager.HelloWorldVPN.service /usr/share/dbus-1/system-services/
@@ -117,6 +128,7 @@ sudo systemctl daemon-reload
 # 2. Удаление файлов
 sudo rm -f /usr/lib/NetworkManager/VPN/libnm-vpn-plugin-helloworld.so
 sudo rm -f /usr/local/bin/helloworldvpn-daemon
+sudo rm -f /usr/local/bin/mock-vpn-client
 sudo rm -f /usr/share/dbus-1/system-services/org.freedesktop.NetworkManager.HelloWorldVPN.service
 sudo rm -f /etc/dbus-1/system.d/org.freedesktop.NetworkManager.HelloWorldVPN.conf
 sudo rm -f /etc/systemd/system/helloworldvpn-daemon.service
@@ -133,7 +145,11 @@ sudo nmcli connection reload
 ---
 
 ## ⚠️ Важные нюансы
+
 1. **Права `.nmconnection`**: NetworkManager **молча игнорирует** профиль, если права ≠ `600` или владелец ≠ `root`.
-2. **WSL2**: Виртуальный `eth0` часто помечен как `unmanaged`. Для тестов достаточно прямого вызова `gdbus`. Для продакшена настройте `wsl.conf` с `systemd=true`.
+2. **Manjaro/Arch Linux**: 
+   - Убедитесь, что установлены пакеты: `networkmanager`, `libnm`, `python-gobject`, `dbus`, `systemd`
+   - Плагин должен находиться в `/usr/lib/NetworkManager/VPN/` (проверьте через `ls /usr/lib/NetworkManager/VPN/`)
+   - Для работы D-Bus может потребоваться перезагрузка системы после установки
 3. **Потокобезопасность**: Сигналы `StateChanged` отправляются через `GLib.idle_add()`. Это гарантирует доставку в `GMainLoop` NetworkManager без крашей и race conditions.
 4. **Парсинг stdout**: Ключевые слова успеха/ошибки находятся в методе `_read_stdout()` демона. Адаптируйте их под формат логов вашего VPN-клиента.
