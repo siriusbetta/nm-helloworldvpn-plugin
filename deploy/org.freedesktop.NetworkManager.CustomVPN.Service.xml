@@ -1,0 +1,25 @@
+<node name="/org/freedesktop/NetworkManager/CustomVPN">
+  <interface name="org.freedesktop.NetworkManager.CustomVPN.Service">
+    <!-- NM вызывает этот метод для старта -->
+    <method name="Connect">
+      <arg name="settings" type="a{sa{sv}}" direction="in"/>
+      <arg name="secrets"  type="a{sv}"       direction="in"/>
+      <arg name="timeout"  type="u"           direction="in"/>
+    </method>
+
+    <!-- Разрыв соединения -->
+    <method name="Disconnect"/>
+
+    <!-- Сигналы состояний (маппятся на NM_VPN_CONNECTION_STATE_*) -->
+    <signal name="StateChanged">
+      <arg name="state"  type="u"/>
+      <arg name="reason" type="u"/>
+    </signal>
+
+    <!-- Логи из stdout -->
+    <signal name="LogMessage">
+      <arg name="priority" type="u"/> <!-- G_LOG_LEVEL_* -->
+      <arg name="message"  type="s"/>
+    </signal>
+  </interface>
+</node>
