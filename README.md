@@ -104,6 +104,34 @@ sudo nmcli connection up helloworldVPN
 
 ---
 
+## 🧹 Удаление и очистка системы
+
+Чтобы полностью удалить плагин, демон и все конфигурационные файлы, выполните:
+
+```bash
+# 1. Остановка и отключение systemd-службы
+sudo systemctl stop helloworldvpn-daemon
+sudo systemctl disable helloworldvpn-daemon
+sudo systemctl daemon-reload
+
+# 2. Удаление файлов
+sudo rm -f /usr/lib/NetworkManager/VPN/libnm-vpn-plugin-helloworld.so
+sudo rm -f /usr/local/bin/helloworldvpn-daemon
+sudo rm -f /usr/share/dbus-1/system-services/org.freedesktop.NetworkManager.HelloWorldVPN.service
+sudo rm -f /etc/dbus-1/system.d/org.freedesktop.NetworkManager.HelloWorldVPN.conf
+sudo rm -f /etc/systemd/system/helloworldvpn-daemon.service
+sudo rm -f /etc/NetworkManager/system-connections/helloworldVPN.nmconnection
+
+# 3. Перезагрузка служб
+sudo systemctl reload dbus
+sudo systemctl restart NetworkManager
+sudo nmcli connection reload
+```
+
+> 💡 **Совет:** сохраните эти команды в файл `uninstall.sh`, сделайте `chmod +x uninstall.sh` и запускайте одной строкой. Все изменения полностью обратимы и не затрагивают системные компоненты.
+
+---
+
 ## ⚠️ Важные нюансы
 1. **Права `.nmconnection`**: NetworkManager **молча игнорирует** профиль, если права ≠ `600` или владелец ≠ `root`.
 2. **WSL2**: Виртуальный `eth0` часто помечен как `unmanaged`. Для тестов достаточно прямого вызова `gdbus`. Для продакшена настройте `wsl.conf` с `systemd=true`.
