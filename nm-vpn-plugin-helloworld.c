@@ -30,7 +30,8 @@ static void on_dbus_signal(GDBusProxy *proxy, const gchar *sender, const gchar *
     if (g_str_equal(signal_name, "StateChanged")) {
         guint state, reason;
         g_variant_get(params, "(uu)", &state, &reason);
-        nm_vpn_service_plugin_set_state(NM_VPN_SERVICE_PLUGIN(self), (NMVpnConnectionState)state);
+	g_signal_emit_by_name(NM_VPN_SERVICE_PLUGIN(self), "state-changed",
+	       	(NMVpnConnectionState)state, 0);
     } 
     else if (g_str_equal(signal_name, "LogMessage")) {
         guint priority; gchar *msg;
