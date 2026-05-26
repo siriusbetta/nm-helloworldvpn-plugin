@@ -7,12 +7,31 @@ HelloWorldWidget::HelloWorldWidget(const NetworkManager::VpnSetting::Ptr &settin
     : SettingWidget(setting, parent)
     , m_setting(setting)
 {
-    auto *layout = new QVBoxLayout(this);
-    layout->addWidget(new QLabel(QStringLiteral("HelloWorld VPN settings"), this));
 
-    setLayout(layout);
+    lineEditPath = new QLineEdit(this);
+    lineEditPath->setReadOnly(true);
+    lineEditPath->setPlaceholderText("Путь к файлу не выбран");
+    lineEditPath->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    Q_EMIT validChanged(true);
+    buttonBrowse = new QPushButton("Выбрать файл", this);
+    buttonShowName = new QPushButton("Показать имя файла", this);
+
+    auto* pathLayout = new QHBoxLayout;
+    pathLayout->addWidget(lineEditPath);
+    pathLayout->addWidget(buttonBrowse);
+
+    auto* mainLayout = new QVBoxLayout(this);
+    mainLayout->addLayout(pathLayout);
+    mainLayout->addWidget(buttonShowName);
+    mainLayout->setContentsMargins(12, 12, 12, 12);
+    mainLayout->setSpacing(10);
+
+    connect(buttonBrowse, &QPushButton::clicked, this, &HelloWorldWidget::onBrowseClicked);
+    connect(buttonShowName, &QPushButton::clicked, this, &HelloWorldWidget::onShowNameClicked);
+
+    setLayout(mainLayout);
+    setWindowTitle("Выбор файла");
+
 }
 
 void HelloWorldWidget::loadConfig(const NetworkManager::Setting::Ptr &setting)
@@ -37,3 +56,21 @@ QVariantMap HelloWorldWidget::setting() const
 
     return result;
 }
+
+void HelloWorldWidget::onBrowseClicked() {
+	QString filePath = QFileDialog::getOpenFileName(this, "Выберите файл");
+	if (!filePath.isEmpty()) {
+	    lineEditPath->setText(filePath);
+	}
+}
+
+void HelloWorldWidget::onShowNameClicked() {
+	QString filePath = lineEditPath->text();
+	if (filePath.isEmpty()) {
+	    QMessageBox::information(this, "Информация", "Сначала выберите файл.");
+	    return;
+	}
+	QString fileName = QFileInfo(filePath).fileName();
+	QMessageBox::information(this, "Имя файла", QString("Выбран файл:\n<b>%1</b>").arg(fileName));
+}
+
