@@ -1,0 +1,7 @@
+[VPN Connection]
+name=helloworld
+service=org.freedesktop.NetworkManager.helloworld
+program=/usr/local/libexec/helloworld-dbus.py
+
+[libnm]
+plugin=libnm-vpn-plugin-helloworld.so
