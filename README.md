@@ -70,3 +70,11 @@ sudo pkill -f helloworld-dbus.py || true
 sudo rm -f /tmp/helloworld-vpn.log
 sudo ip tuntap del dev hello-vpn0 mode tun 2>/dev/null || true
 ```
+
+## build for KDE
+
+```bash
+mkdir ~/tmp-build
+cd nm-plugin-hello-qt6-ui 
+TMPDIR=~/tmp-build podman build -t kde-arch-dev .
+```
