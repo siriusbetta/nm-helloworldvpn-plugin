@@ -47,6 +47,16 @@ cp src/helloworld-dbus.py /usr/local/libexec/helloworld-dbus.py
 sudo chmod +x /usr/local/libexec/helloworld-dbus.py
 sudo chown root:root /usr/local/libexec/helloworld-dbus.py
 ```
+## Dependences
+### for Debian/Ubuntu
+```bash
+sudo apt update
+sudo apt install python3-dbus python3-gi
+```
+### for Arch/Manjaro
+```bash
+sudo pacman -S python-dbus python-gobject
+```
 
 
 ## 7 - restart NetworkManager
