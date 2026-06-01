@@ -1,14 +1,23 @@
-/etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
 
+## Description
+
+## nmconnection
+
+```bash
+cp config/helloworld-vpn.nmconnection /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
 
 sudo chmod 600 /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
 sudo chown root:root /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
+```
 
+## name
 
-/usr/lib/NetworkManager/VPN/helloworld.name
+```bash
+cp config/helloworld.name  /usr/lib/NetworkManager/VPN/helloworld.name
+```
+
 
 /usr/share/dbus-1/system-services/org.freedesktop.NetworkManager.helloworld.service
-
 /etc/dbus-1/system.d/org.freedesktop.NetworkManager.helloworld.conf
 
 
@@ -33,4 +42,3 @@ sudo systemctl restart NetworkManager
 sudo nmcli connection reload
 
 sudo nmcli connection up helloworld-vpn
-
