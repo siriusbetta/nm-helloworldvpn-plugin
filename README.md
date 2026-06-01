@@ -1,0 +1,72 @@
+
+## Description
+
+## 1 - nmconnection
+
+```bash
+cp config/helloworld-vpn.nmconnection /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
+
+sudo chmod 600 /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
+sudo chown root:root /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
+```
+
+## 2 - name
+
+```bash
+cp config/helloworld.name  /usr/lib/NetworkManager/VPN/helloworld.name
+```
+
+## 3 - service
+
+```bash
+cp config/org.freedesktop.NetworkManager.helloworld.service /usr/share/dbus-1/system-services/org.freedesktop.NetworkManager.helloworld.service
+```
+
+## 4 - conf
+
+```bash
+cp config/org.freedesktop.NetworkManager.helloworld.conf /etc/dbus-1/system.d/org.freedesktop.NetworkManager.helloworld.conf
+```
+
+## 5 - reset dbus
+
+```bash
+sudo dbus-send \
+  --system \
+  --type=method_call \
+  --dest=org.freedesktop.DBus \
+  / \
+  org.freedesktop.DBus.ReloadConfig
+```
+
+
+## 6 - dbus dispatcher
+
+```bash
+cp src/helloworld-dbus.py /usr/local/libexec/helloworld-dbus.py
+sudo chmod +x /usr/local/libexec/helloworld-dbus.py
+sudo chown root:root /usr/local/libexec/helloworld-dbus.py
+```
+
+
+## 7 - restart NetworkManager
+
+```bash
+sudo systemctl restart NetworkManager
+sudo nmcli connection reload
+```
+
+
+## 8 - up connection
+
+```bash
+sudo nmcli connection up helloworld-vpn
+```
+
+## debug
+
+```bash
+sudo pkill -f helloworld-dbus.py || true
+sudo rm -f /tmp/helloworld-vpn.log
+sudo ip tuntap del dev hello-vpn0 mode tun 2>/dev/null || true
+```
