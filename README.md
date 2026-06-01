@@ -102,3 +102,17 @@ TMPDIR=~/tmp-build podman build -t kde-arch-dev .
 man run --rm -v "$PWD:/src:Z" kde-arch-dev 
 sh -c "rm -rf build && cmake -B build && cmake --build build"
 ```
+
+## Install
+
+```bash
+chmod +x install.sh
+sudo ./install.sh
+```
+
+## Uninstall
+
+```bash
+chmod +x uninstall.sh
+sudo ./uninstall.sh
+```
