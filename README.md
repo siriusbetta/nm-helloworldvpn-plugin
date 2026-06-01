@@ -47,6 +47,15 @@ cp src/helloworld-dbus.py /usr/local/libexec/helloworld-dbus.py
 sudo chmod +x /usr/local/libexec/helloworld-dbus.py
 sudo chown root:root /usr/local/libexec/helloworld-dbus.py
 ```
+### for Debian/Ubuntu
+```bash
+sudo apt update
+sudo apt install python3-dbus python3-gi
+```
+### for Arch/Manjaro
+```bash
+sudo pacman -S python-dbus python-gobject
+```
 
 
 ## 7 - restart NetworkManager
@@ -69,4 +78,19 @@ sudo nmcli connection up helloworld-vpn
 sudo pkill -f helloworld-dbus.py || true
 sudo rm -f /tmp/helloworld-vpn.log
 sudo ip tuntap del dev hello-vpn0 mode tun 2>/dev/null || true
+```
+
+## build container for KDE
+
+```bash
+mkdir ~/tmp-build
+cd nm-plugin-hello-qt6-ui 
+TMPDIR=~/tmp-build podman build -t kde-arch-dev .
+```
+
+## build lib for plugin
+
+```bash  
+man run --rm -v "$PWD:/src:Z" kde-arch-dev 
+sh -c "rm -rf build && cmake -B build && cmake --build build"
 ```
