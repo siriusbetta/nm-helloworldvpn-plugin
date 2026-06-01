@@ -57,8 +57,16 @@ sudo apt install python3-dbus python3-gi
 sudo pacman -S python-dbus python-gobject
 ```
 
+## 7 - install UI
+### Qt6 based 
 
-## 7 - restart NetworkManager
+```bash
+cd nm-plugin-hello-qt6-ui
+sudo cp build/bin/plasmanetworkmanagement_helloworldui.so /usr/lib/qt6/plugins/plasma/network/vpn/
+sudo chmod 755 /usr/lib/qt6/plugins/plasma/network/vpn/plasmanetworkmanagement_helloworldui.so
+```
+
+## 8 - restart NetworkManager
 
 ```bash
 sudo systemctl restart NetworkManager
@@ -66,7 +74,7 @@ sudo nmcli connection reload
 ```
 
 
-## 8 - up connection
+## 9 - up connection
 
 ```bash
 sudo nmcli connection up helloworld-vpn
