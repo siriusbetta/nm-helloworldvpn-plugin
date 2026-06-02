@@ -90,10 +90,12 @@ sudo ip tuntap del dev hello-vpn0 mode tun 2>/dev/null || true
 
 ## build container for KDE
 
+TMPDIR=~/tmp-build podman build -f <Container-name> -t <image name> <src>
+
 ```bash
 mkdir ~/tmp-build
 cd nm-plugin-hello-qt6-ui 
-TMPDIR=~/tmp-build podman build -t kde-arch-dev .
+TMPDIR=~/tmp-build podman build -f Container-arch -t kde-arch-dev .
 ```
 
 ## build lib for plugin
