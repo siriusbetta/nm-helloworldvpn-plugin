@@ -90,7 +90,7 @@ sudo ip tuntap del dev hello-vpn0 mode tun 2>/dev/null || true
 
 ## build container for KDE
 
-TMPDIR=~/tmp-build podman build -f <Container-name> -t <image name> <src>
+TMPDIR=~/tmp-build podman build -f \<Container-name\> -t \<image name\> \<src\>
 
 ```bash
 mkdir ~/tmp-build
