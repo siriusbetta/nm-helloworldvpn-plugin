@@ -4,9 +4,9 @@ project(plasma-networkmanagement)
 
 set(PROJECT_VERSION "6.7.80")
 
-set(PROJECT_DEP_VERSION "6.6.5")
-set(QT_MIN_VERSION "6.10.0")
-set(KF6_MIN_VERSION "6.24.0")
+set(PROJECT_DEP_VERSION "6.3.4")
+set(QT_MIN_VERSION "6.8.0")
+set(KF6_MIN_VERSION "6.8.0")
 set(KDE_COMPILERSETTINGS_LEVEL "5.82")
 
 set(CMAKE_CXX_STANDARD 20)
@@ -40,6 +40,10 @@ find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     Widgets
 )
 find_package(Qt6Keychain 0.15.0 CONFIG REQUIRED)
+
+find_package(Qca-qt6 REQUIRED)
+# Если ваша система использует старое именование, может потребоваться:
+# find_package(QCA REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 
@@ -102,7 +106,7 @@ ecm_set_disabled_deprecation_versions(QT 5.15
 add_definitions(-DQT_NO_URL_CAST_FROM_STRING)
 
 remove_definitions(-DQT_NO_CAST_FROM_ASCII -DQT_NO_CAST_FROM_BYTEARRAY)
-
+find_package(KF6Wallet REQUIRED)
 #add_subdirectory(plasma-nm/applet)
 #add_subdirectory(plasma-nm/kded)
 #add_subdirectory(plasma-nm/kcms)
