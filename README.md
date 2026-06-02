@@ -99,7 +99,7 @@ TMPDIR=~/tmp-build podman build -t kde-arch-dev .
 ## build lib for plugin
 
 ```bash  
-man run --rm -v "$PWD:/src:Z" kde-arch-dev 
+TMPDIR=~/tmp-build podman run --rm -v "$PWD:/src:Z" kde-arch-dev 
 sh -c "rm -rf build && cmake -B build && cmake --build build"
 ```
 
