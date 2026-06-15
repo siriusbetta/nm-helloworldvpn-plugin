@@ -19,7 +19,6 @@ pkg_check_modules(LIBM REQUIRED IMPORTED_TARGET libnm gmodule-2.0)
 add_library(${PROJECT_NAME} MODULE
     my-vpn-editor.c
     my-vpn-editor-plugin.c
-    file-chooser-widget.c
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     filewidget 
@@ -27,8 +26,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     PkgConfig::LIBM
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    # PREFIX ""  # Без "lib" в имени
+    PREFIX ""  # Без "lib" в имени
     #    OUTPUT_NAME "nm-my-vpn-editor"
     OUTPUT_NAME ${PROJECT_NAME} 
 )
 
+# Установка
+install(TARGETS  ${PROJECT_NAME}
+        LIBRARY DESTINATION /usr/lib/NetworkManager/)
+install(FILES my-vpn-service.name 
+        DESTINATION /usr/lib/NetworkManager/VPN/)
