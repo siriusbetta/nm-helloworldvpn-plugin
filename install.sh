@@ -25,7 +25,11 @@ fi
 
 # 3. Установка файлов конфигурации и службы
 echo "📁 Копирование файлов конфигурации..."
-
+mkdir -p /etc/NetworkManager/system-connections
+mkdir -p /usr/lib/NetworkManager/VPN
+mkdir -p /usr/share/dbus-1/system-services
+mkdir -p /etc/dbus-1/system.d          # ← добавить эту строку
+mkdir -p /usr/local/libexec
 cp ./config/helloworld-vpn.nmconnection /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection 2>/dev/null || \
 cp ./helloworld-vpn.nmconnection /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
 chmod 600 /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection

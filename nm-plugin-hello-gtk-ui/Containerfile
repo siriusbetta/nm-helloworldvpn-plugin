@@ -1,0 +1,18 @@
+# Этап 1: Сборка плагина
+# Используем Ubuntu 24.04. (Если предпочитаете Fedora, замените на fedora:latest и пакеты: gtk4-devel, NetworkManager-libnm-devel, glib2-devel)
+FROM ubuntu:24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Установка зависимостей для компиляции
+RUN apt-get update && apt-get install -y \
+    cmake \
+    clang \
+    pkg-config \
+    libgtk-4-dev \
+    libnm-dev \
+    libnma-gtk4-dev \
+    libglib2.0-dev 
+#    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src

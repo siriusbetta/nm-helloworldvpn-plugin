@@ -7,6 +7,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtk4)
 pkg_check_modules(LIBM REQUIRED IMPORTED_TARGET libnm)
+pkg_check_modules(LIBMA REQUIRED IMPORTED_TARGET libnma-gtk4)
 
 # Библиотека с виджетом (переиспользуемая)
 add_library(filewidget STATIC file-chooser-widget.c)
@@ -24,6 +25,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     filewidget 
     PkgConfig::GTK4 
     PkgConfig::LIBM
+    PkgConfig::LIBMA
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
     PREFIX ""  # Без "lib" в имени
