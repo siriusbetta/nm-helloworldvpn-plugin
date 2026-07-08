@@ -17,24 +17,45 @@ target_link_libraries(filewidget PUBLIC PkgConfig::GTK4)
 pkg_check_modules(LIBM REQUIRED IMPORTED_TARGET libnm gmodule-2.0)
 
 # UI-плагин (динамическая библиотека для libnm)
-add_library(${PROJECT_NAME} MODULE
-    my-vpn-editor.c
-    my-vpn-editor-plugin.c
+set( SRC 
+	  my-vpn-editor.c
+	  my-vpn-editor-plugin.c
+    )
+
+add_library(target1 MODULE
+	${SRC}
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE 
+
+add_library(target2 MODULE
+	${SRC}
+)
+
+target_link_libraries(target1 PRIVATE 
     filewidget 
     PkgConfig::GTK4 
     PkgConfig::LIBM
     PkgConfig::LIBMA
 )
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    PREFIX ""  # Без "lib" в имени
-    #    OUTPUT_NAME "nm-my-vpn-editor"
-    OUTPUT_NAME ${PROJECT_NAME} 
+
+target_link_libraries(target2 PRIVATE 
+    filewidget 
+    PkgConfig::GTK4 
+    PkgConfig::LIBM
+    #  PkgConfig::LIBMA
+)
+set_target_properties(target1 PROPERTIES
+	# PREFIX ""  # Без "lib" в имени
+    OUTPUT_NAME "nm-gtk4-vpn-plugin-helloworld-editor"
+    # OUTPUT_NAME ${PROJECT_NAME} 
+)
+set_target_properties(target2 PROPERTIES
+	# PREFIX ""  # Без "lib" в имени
+    OUTPUT_NAME "nm-vpn-plugin-helloworld"
+    # OUTPUT_NAME ${PROJECT_NAME} 
 )
 
 # Установка
-install(TARGETS  ${PROJECT_NAME}
-        LIBRARY DESTINATION /usr/lib/NetworkManager/)
-install(FILES my-vpn-service.name 
-        DESTINATION /usr/lib/NetworkManager/VPN/)
+# install(TARGETS  ${PROJECT_NAME}
+#        LIBRARY DESTINATION /usr/lib/NetworkManager/)
+# install(FILES my-vpn-service.name 
+#        DESTINATION /usr/lib/NetworkManager/VPN/)

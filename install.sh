@@ -55,29 +55,85 @@ cp ./helloworld-dbus.py /usr/local/libexec/helloworld-dbus.py
 chmod +x /usr/local/libexec/helloworld-dbus.py
 chown root:root /usr/local/libexec/helloworld-dbus.py
 
-# 6. Определение пути установки UI библиотеки (multiarch для Debian/Ubuntu или стандартный для Arch)
 UI_DIR=""
-if [ -d "/usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/" ]; then
-    UI_DIR="/usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/"
-elif [ -d "/usr/lib/qt6/plugins/plasma/network/vpn/" ]; then
-    UI_DIR="/usr/lib/qt6/plugins/plasma/network/vpn/"
+
+if [ -f /etc/os-release ]; then
+	source /etc/os-release
+	echo "Дистрибутив: $NAME"
+else
+	echo "Файл /ect/os-release не найден"
 fi
 
-# 7. Установка UI библиотеки (Qt6)
-echo "🎨 Установка UI библиотеки..."
-if [ -f "./nm-plugin-hello-qt6-ui/build/bin/plasmanetworkmanagement_helloworldui.so" ]; then
-    if [ -n "$UI_DIR" ]; then
-        cp ./nm-plugin-hello-qt6-ui/build/bin/plasmanetworkmanagement_helloworldui.so "$UI_DIR"
-        chmod 755 "$UI_DIR/plasmanetworkmanagement_helloworldui.so"
-        echo "✅ UI библиотека для Qt6 успешно установлена в $UI_DIR"
-    else
-        echo "⚠️ Не удалось определить директорию для установки UI библиотеки."
-        echo "💡 Создайте директорию вручную и скопируйте файл plasmanetworkmanagement_helloworldui.so"
-    fi
-else
-    echo "⚠️ Файл UI библиотеки (plasmanetworkmanagement_helloworldui.so) не найден."
-    echo "💡 Возможно, вам нужно сначала скомпилировать его (см. раздел 'build lib for plugin' в README)."
+OS_NAME="$ID"
+
+if [ "$ID" = "arch" ] || [ "$ID" = "manjaro" ]; then
+	OS_NAME="arch"
 fi
+
+DE_NAME=""
+DE=$(echo "$XDG_CURRENT_DESKTOP" | tr '[:upper:]' '[:lower:]')
+
+case "$DE" in
+    *gnome*)
+        echo "Запущен GNOME"
+	DE_NAME="gnome"
+        ;;
+    *kde*|*plasma*)
+        echo "Запущен KDE Plasma"
+	DE_NAME="kde-plasma"
+        ;;
+    *xfce*)
+        echo "Запущен XFCE"
+	DE_NAME="xfce"
+        ;;
+    *mate*)
+        echo "Запущен MATE"
+	DE_NAME="mate"
+        ;;
+    *cinnamon*)
+        echo "Запущен Cinnamon"
+	DE_NAME="cinnamon"
+        ;;
+    *)
+        echo "Окружение не определено или используется консоль: $XDG_CURRENT_DESKTOP"
+        ;;
+esac
+
+if [ "$OS_NAME"=="debian" ] && [ "$DE_NAME"=="kde-plasma" ]; then
+	if [ -d "/usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/" ]; then
+	  UI_DIR="/usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/"
+	fi
+fi
+
+if [ "$OS_NAME"=="arch" ] && [ "$DE_NAME"=="kde-plasma" ]; then
+	if [ -d "/usr/lib/qt6/plugins/plasma/network/vpn/" ]; then
+	  UI_DIR="/usr/lib/qt6/plugins/plasma/network/vpn/"
+	fi
+fi
+
+if [ "$OS_NAME"=="arch" ] && [ "$DE_NAME"=="gnome" ]; then
+	if [ -d "/usr/lib/NetworkManager/" ]; then
+	  UI_DIR="/usr/lib/NetworkManager/"
+	fi
+fi
+
+UI_FILE1="./nm-plugin-hello-gtk-ui/build/libnm-gtk4-vpn-plugin-helloworld-editor.so"
+UI_FILE2="./nm-plugin-hello-gtk-ui/build/libnm-vpn-plugin-helloworld.so"
+
+if [ -f "$UI_FILE1" ] && [ -f "$UI_FILE2" ]; then
+  if [ -n "$UI_DIR" ]; then
+    echo "Установка UI библиотеки"
+    cp "$UI_FILE1" "$UI_DIR"
+    cp "$UI_FILE2" "$UI_DIR"
+    chmod 755 "$UI_DIR/libnm-gtk4-vpn-plugin-helloworld-editor.so"
+    chmod 755 "$UI_DIR/libnm-vpn-plugin-helloworld.so"
+  else
+    echo "Директория для UI библиотеки не найдена"
+  fi
+else
+  echo "UI библиотека не найдена, установка UI пропущена"
+fi
+
 
 # 8. Перезапуск NetworkManager и перезагрузка соединений
 echo "🔄 Перезапуск NetworkManager..."

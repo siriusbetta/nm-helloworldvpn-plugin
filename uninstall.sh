@@ -29,8 +29,71 @@ rm -f /usr/local/libexec/helloworld-dbus.py
 
 # 4. Удаление UI библиотеки из правильного места
 echo "🎨 Удаление UI библиотеки..."
-rm -f /usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/plasmanetworkmanagement_helloworldui.so 2>/dev/null || true
-rm -f /usr/lib/qt6/plugins/plasma/network/vpn/plasmanetworkmanagement_helloworldui.so 2>/dev/null || true
+UI_DIR=""
+if [ -f /etc/os-release ]; then
+	source /etc/os-release
+	echo "Дистрибутив: $NAME"
+else
+	echo "Файл /ect/os-release не найден"
+fi
+
+OS_NAME="$ID"
+
+if [ "$ID" = "arch" ] || [ "$ID" = "manjaro" ]; then
+	OS_NAME="arch"
+fi
+
+DE_NAME=""
+DE=$(echo "$XDG_CURRENT_DESKTOP" | tr '[:upper:]' '[:lower:]')
+
+case "$DE" in
+    *gnome*)
+        echo "Запущен GNOME"
+	DE_NAME="gnome"
+        ;;
+    *kde*|*plasma*)
+        echo "Запущен KDE Plasma"
+	DE_NAME="kde-plasma"
+        ;;
+    *xfce*)
+        echo "Запущен XFCE"
+	DE_NAME="xfce"
+        ;;
+    *mate*)
+        echo "Запущен MATE"
+	DE_NAME="mate"
+        ;;
+    *cinnamon*)
+        echo "Запущен Cinnamon"
+	DE_NAME="cinnamon"
+        ;;
+    *)
+        echo "Окружение не определено или используется консоль: $XDG_CURRENT_DESKTOP"
+        ;;
+esac
+
+if [ "$OS_NAME"=="debian" ] && [ "$DE_NAME"=="kde-plasma" ]; then
+	if [ -d "/usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/" ]; then
+	  UI_DIR="/usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/"
+	fi
+fi
+
+if [ "$OS_NAME"=="arch" ] && [ "$DE_NAME"=="kde-plasma" ]; then
+	if [ -d "/usr/lib/qt6/plugins/plasma/network/vpn/" ]; then
+	  UI_DIR="/usr/lib/qt6/plugins/plasma/network/vpn/"
+	fi
+fi
+
+if [ "$OS_NAME"=="arch" ] && [ "$DE_NAME"=="gnome" ]; then
+	if [ -d "/usr/lib/NetworkManager/" ]; then
+	  UI_DIR="/usr/lib/NetworkManager/"
+	fi
+fi
+
+echo "Удаление UI библиотеки"
+rm -f "$UI_DIR/libnm-gtk4-vpn-plugin-helloworld-editor.so" || true
+rm -f "$UI_DIR/libnm-vpn-plugin-helloworld.so" || true
+
 
 # 5. Перезагрузка конфигурации D-Bus и NetworkManager
 echo "🔄 Перезагрузка конфигурации D-Bus и NetworkManager..."
