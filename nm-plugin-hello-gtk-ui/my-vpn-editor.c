@@ -1,114 +1,130 @@
+	#include "nm-default.h"
+#include "nm-connection.h"
+#include "nm-vpn-editor.h"
+#include "nm-vpn-editor-plugin.h"
+
 #include "my-vpn-editor.h"
+
 #include <gtk/gtk.h>
 
-#define MY_VPN_SERVICE_TYPE "org.example.myvpn"
-#define MY_VPN_KEY_CONFIG_PATH "config_path"
+static void my_vpn_editor_plugin_widget_interface_init (NMVpnEditorInterface *iface_class);
 
-struct _MyVpnEditor {
-    GObject parent_instance;
-    FileChooserWidget *file_widget;
-    NMConnection *connection;
-};
+G_DEFINE_TYPE_EXTENDED (MyVpnEditor, my_vpn_editor_plugin_widget, G_TYPE_OBJECT, 0,
+                        G_IMPLEMENT_INTERFACE (NM_TYPE_VPN_EDITOR,
+                                               my_vpn_editor_plugin_widget_interface_init))
 
-/* Прототипы */
-static void nm_vpn_editor_iface_init(NMVpnEditorInterface *iface);
-static void my_vpn_editor_class_init(MyVpnEditorClass *klass);
+#define MY_VPN_EDITOR_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), MY_VPN_TYPE_EDITOR, MyVpnEditorPrivate))
 
-G_DEFINE_TYPE_WITH_CODE(MyVpnEditor, my_vpn_editor, G_TYPE_OBJECT,
-                        G_IMPLEMENT_INTERFACE(NM_TYPE_VPN_EDITOR, nm_vpn_editor_iface_init))
+typedef struct {
+	GtkBuilder *builder;
+	GtkWidget *widget;
+	GtkWindowGroup *window_group;
+	gboolean window_added;
+	GHashTable *advanced;
+	gboolean new_connection;
+	GtkWidget *tls_user_cert_chooser;
+} MyVpnEditorPrivate;
 
-/* === Сигналы и вспомогательные функции === */
-
-static void on_path_changed(FileChooserWidget *widget, const gchar *path, gpointer user_data) {
-    MyVpnEditor *self = MY_VPN_EDITOR(user_data);
-    NMSettingVpn *s_vpn = nm_connection_get_setting_vpn(self->connection);
-    
-    if (!s_vpn) {
-        s_vpn = NM_SETTING_VPN(nm_setting_vpn_new());
-        g_object_set(s_vpn, NM_SETTING_VPN_SERVICE_TYPE, MY_VPN_SERVICE_TYPE, NULL);
-        nm_connection_add_setting(self->connection, NM_SETTING(s_vpn));
-    }
-    
-    if (path && *path)
-        nm_setting_vpn_add_data_item(s_vpn, MY_VPN_KEY_CONFIG_PATH, path);
-    else
-        nm_setting_vpn_remove_data_item(s_vpn, MY_VPN_KEY_CONFIG_PATH);
-        
-    g_signal_emit_by_name(self, "changed");
+static void
+my_vpn_editor_plugin_widget_init (MyVpnEditor *plugin)
+{
+	g_message("my_vpn_editor_plugin_widget_init");
 }
 
-static void load_from_connection(MyVpnEditor *self) {
-    NMSettingVpn *s_vpn = nm_connection_get_setting_vpn(self->connection);
-    if (!s_vpn) return;
-    
-    const gchar *path = nm_setting_vpn_get_data_item(s_vpn, MY_VPN_KEY_CONFIG_PATH);
-    if (path)
-        file_chooser_widget_set_path(self->file_widget, path);
+static void
+dispose (GObject *object)
+{
+	g_message("dispose");
+	MyVpnEditor *plugin = MY_VPN_EDITOR (object);
+	MyVpnEditorPrivate *priv = MY_VPN_EDITOR_GET_PRIVATE (plugin);
+
+	g_clear_object (&priv->window_group);
+	g_clear_object (&priv->widget);
+	g_clear_object (&priv->builder);
+	g_clear_pointer (&priv->advanced, g_hash_table_destroy);
+//	G_OBJECT_CLASS (openvpn_editor_plugin_widget_parent_class)->dispose (object);
 }
 
-/* === Реализация интерфейса NMVpnEditor === */
+static void
+my_vpn_editor_plugin_widget_class_init (MyVpnEditorClass *req_class)
+{
+	g_message("my_vpn_editor_plugin_widget_class_init");
+	GObjectClass *object_class = G_OBJECT_CLASS (req_class);
 
-static GObject *get_widget(NMVpnEditor *iface) {
-    MyVpnEditor *self = MY_VPN_EDITOR(iface);
-    return G_OBJECT(self->file_widget);
+	g_type_class_add_private (req_class, sizeof (MyVpnEditorPrivate));
+
+	object_class->dispose = dispose;
 }
 
-// В NM 1.40+ валидация выполняется здесь, check_validity удалён
-static gboolean update_connection(NMVpnEditor *iface, NMConnection *connection, GError **error) {
-    MyVpnEditor *self = MY_VPN_EDITOR(iface);
-    const gchar *path = file_chooser_widget_get_path(self->file_widget);
+static GObject *
+get_widget (NMVpnEditor *iface)
+{
+	g_message("get_widget");
+	MyVpnEditor *self = MY_VPN_EDITOR (iface);
+	MyVpnEditorPrivate *priv = MY_VPN_EDITOR_GET_PRIVATE (self);
 
-    if (!path || !*path) {
-        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED, "Файл конфигурации не выбран");
-        return FALSE;
-    }
-    if (!g_file_test(path, G_FILE_TEST_EXISTS)) {
-        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED, "Файл не существует: %s", path);
-        return FALSE;
-    }
-
-    NMSettingVpn *s_vpn = nm_connection_get_setting_vpn(connection);
-    if (!s_vpn) {
-        s_vpn = NM_SETTING_VPN(nm_setting_vpn_new());
-        g_object_set(s_vpn, NM_SETTING_VPN_SERVICE_TYPE, MY_VPN_SERVICE_TYPE, NULL);
-        nm_connection_add_setting(connection, NM_SETTING(s_vpn));
-    }
-    
-    nm_setting_vpn_add_data_item(s_vpn, MY_VPN_KEY_CONFIG_PATH, path);
-    return TRUE;
+	return G_OBJECT (priv->widget);
 }
 
-/* === GObject Boilerplate === */
-
-static void my_vpn_editor_class_init(MyVpnEditorClass *klass) {
-    // В данной реализации class_init не требуется, но должен быть определён
-    // для G_DEFINE_TYPE_WITH_CODE
+static gboolean
+update_connection (NMVpnEditor *iface,
+                   NMConnection *connection,
+                   GError **error)
+{
+	g_message("update_connection");
+	return true;
 }
 
-static void my_vpn_editor_init(MyVpnEditor *self) {
-    self->file_widget = FILE_CHOOSER_WIDGET(file_chooser_widget_new());
-    g_signal_connect(self->file_widget, "path-changed", G_CALLBACK(on_path_changed), self);
+static void
+my_vpn_editor_plugin_widget_interface_init (NMVpnEditorInterface *iface_class)
+{
+	g_message("my_vpn_editor_plugin_widget_interface_init");
+	/* interface implementation */
+	iface_class->get_widget = get_widget;
+	iface_class->update_connection = update_connection;
 }
 
-/* Обязательная функция инициализации интерфейса */
-static void nm_vpn_editor_iface_init(NMVpnEditorInterface *iface) {
-    iface->get_widget = get_widget;
-    iface->update_connection = update_connection;
-    // iface->suggest_address оставляем NULL (опционально)
+static void
+stuff_changed_cb (GtkWidget *widget, gpointer user_data)
+{
+	g_message("stuff_changed_cb");
+	g_signal_emit_by_name (MY_VPN_EDITOR (user_data), "changed");
 }
 
-NMVpnEditor *my_vpn_editor_new(NMConnection *connection, GError **error) {
-    g_return_val_if_fail(NM_IS_CONNECTION(connection), NULL);
-    
-    MyVpnEditor *self = g_object_new(MY_VPN_TYPE_EDITOR, NULL);
-    self->connection = g_object_ref(connection);
-    load_from_connection(self);
-    
-    return NM_VPN_EDITOR(self);
+NMVpnEditor *my_vpn_editor_new (NMConnection *connection, GError **error) {
+	MyVpnEditor *object = g_object_new (MY_VPN_TYPE_EDITOR, NULL);
+	MyVpnEditorPrivate *priv;
+
+	if (!object) {
+		g_set_error_literal (error, g_quark_from_static_string ("my-vpn-error"), 0, _("could not create my-vpn object"));
+		return NULL;
+	}
+
+	priv = MY_VPN_EDITOR_GET_PRIVATE (object);
+	priv->builder = gtk_builder_new_from_resource(
+	    "/org/freedesktop/NetworkManager/helloworld/my-vpn-editor.ui"
+	);
+
+	priv->widget = GTK_WIDGET (gtk_builder_get_object (priv->builder, "my-vpn-vbox"));
+	if (!priv->widget) {
+		g_set_error_literal (error, g_quark_from_static_string ("my-vpn-error"), 0, _("could not load UI widget"));
+		g_object_unref (object);
+		//g_return_val_if_reached (NULL);
+		g_assert_not_reached();
+		return NULL;
+	}
+	g_object_ref_sink (priv->widget);
+
+	return (NMVpnEditor*) object;
 }
 
-static void my_vpn_editor_dispose(GObject *obj) {
-    MyVpnEditor *self = MY_VPN_EDITOR(obj);
-    g_clear_object(&self->connection);
-    G_OBJECT_CLASS(my_vpn_editor_parent_class)->dispose(obj);
+G_MODULE_EXPORT NMVpnEditor *
+nm_vpn_editor_factory_my_vpn (NMVpnEditorPlugin *editor_plugin,
+                              NMConnection *connection,
+                              GError **error)
+{
+	g_message("nm_vpn_editor_factory_my_vpn");
+	g_return_val_if_fail (!error || !*error, NULL);
+
+	return my_vpn_editor_new (connection, error);
 }
