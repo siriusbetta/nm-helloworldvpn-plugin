@@ -1,0 +1,7 @@
+[libnm]
+plugin=libnm-vpn-plugin-helloworld.so
+
+[GNOME]
+properties=libnm-gtk4-vpn-plugin-helloworld-editor
+supports-external-ui-mode=true
+supports-hints=true

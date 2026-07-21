@@ -1,14 +1,8 @@
-
 #include "nm-default.h"
 
-#ifdef NM_VPN_OLD
-//#include "nm-openvpn-editor.h"
-#error
-#else
 #include "nm-connection.h"
 #include "nm-vpn-editor-plugin.h"
 #include "my-vpn-editor.h"
-#endif
 
 #include "my-vpn-editor-plugin.h"
 #include "my-vpn-editor.h"
@@ -22,8 +16,6 @@ enum {
 	PROP_SERVICE
 };
 
-//#define PATH_SO NM_PLUGIN_DIR"/libnm-vpn-plugin-openvpn-editor.so"
-//#define PATH_SO "/home/manuel/Projects/nm-vpn-plugin/code/libmy-vpn-editor-plugin.so"
 #define MY_VPN_PLUGIN_NAME _("My Test VPN")
 #define MY_VPN_PLUGIN_DESC _("This is my test")
 #define NM_VPN_SERVICE_TYPE_MYVPN "org.freedesktop.NetworkManager.helloworld"
@@ -36,19 +28,6 @@ G_DEFINE_TYPE_EXTENDED (MyVpnEditorPlugin, my_vpn_editor_plugin, G_TYPE_OBJECT, 
                                                my_vpn_editor_plugin_interface_init))
 
 static NMVpnEditor *
-_call_editor_factory (gpointer factory,
-                      NMVpnEditorPlugin *editor_plugin,
-                      NMConnection *connection,
-                      gpointer user_data,
-                      GError **error)
-{
-	g_message("_call_editor_factory");
-	return ((NMVpnEditorFactory) factory) (editor_plugin,
-	                                       connection,
-	                                       error);
-}
-
-static NMVpnEditor *
 get_editor (NMVpnEditorPlugin *iface, NMConnection *connection, GError **error)
 {
 	g_message("get_editor");
@@ -57,33 +36,20 @@ get_editor (NMVpnEditorPlugin *iface, NMConnection *connection, GError **error)
 	g_return_val_if_fail (!error || !*error, NULL);
 
 	return my_vpn_editor_new (connection, error);
-
-//	g_message("get_editor done");
-//	return res;
 }
 
 static guint32
 get_capabilities (NMVpnEditorPlugin *iface)
 {
-	return (//NM_VPN_EDITOR_PLUGIN_CAPABILITY_IMPORT |
-	        //NM_VPN_EDITOR_PLUGIN_CAPABILITY_EXPORT |
-	        NM_VPN_EDITOR_PLUGIN_CAPABILITY_IPV6);
+	return NM_VPN_EDITOR_PLUGIN_CAPABILITY_IPV6;
 }
-
 
 static void
 my_vpn_editor_plugin_interface_init (NMVpnEditorPluginInterface *iface_class)
 {
 	g_message("my_vpn_editor_plugin_interface_init");
-        iface_class->get_editor = get_editor;
-
-        iface_class->get_capabilities = get_capabilities;
-
-	/*
-        iface_class->import_from_file = import;
-        iface_class->export_to_file = export;
-        iface_class->get_suggested_filename = get_suggested_filename;
-*/
+	iface_class->get_editor = get_editor;
+	iface_class->get_capabilities = get_capabilities;
 }
 
 static void

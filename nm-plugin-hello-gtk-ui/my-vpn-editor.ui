@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkBox" id="my-vpn-vbox">
     <property name="orientation">vertical</property>
     <property name="spacing">16</property>
-    <property name="margin-start">12</property>
-    <property name="margin-end">12</property>
     <property name="margin-top">12</property>
     <property name="margin-bottom">12</property>
+    <property name="margin-start">12</property>
+    <property name="margin-end">12</property>
 
     <child>
       <object class="GtkBox" id="vbox8">
@@ -17,10 +18,9 @@
           <object class="GtkLabel" id="label22">
             <property name="label" translatable="yes">General</property>
             <property name="xalign">0</property>
-            <property name="halign">start</property>
-            <attributes>
-              <attribute name="weight" value="bold"/>
-            </attributes>
+            <style>
+              <class name="heading"/>
+            </style>
           </object>
         </child>
 
@@ -35,7 +35,6 @@
                 <property name="label" translatable="yes">_Remote Public Key:</property>
                 <property name="use-underline">True</property>
                 <property name="xalign">0</property>
-                <property name="halign">start</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">0</property>
@@ -55,7 +54,8 @@
 
             <child>
               <object class="GtkButton" id="find_button">
-                <property name="label">Find…</property>
+                <property name="icon-name">edit-find-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Find</property>
                 <layout>
                   <property name="column">2</property>
                   <property name="row">0</property>
@@ -67,7 +67,6 @@
               <object class="GtkLabel">
                 <property name="label" translatable="yes">Local Private Key:</property>
                 <property name="xalign">0</property>
-                <property name="halign">start</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">1</property>
@@ -89,7 +88,6 @@
               <object class="GtkLabel">
                 <property name="label" translatable="yes">Publish Local Private Key as:</property>
                 <property name="xalign">0</property>
-                <property name="halign">start</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">2</property>
@@ -109,7 +107,8 @@
             </child>
 
             <child>
-              <object class="GtkSwitch">
+              <object class="GtkSwitch" id="publish_switch">
+                <property name="valign">center</property>
                 <layout>
                   <property name="column">2</property>
                   <property name="row">2</property>
