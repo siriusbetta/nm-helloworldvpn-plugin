@@ -21,6 +21,11 @@ G_DEFINE_TYPE_WITH_PRIVATE (MyVpnEditor, my_vpn_editor, G_TYPE_OBJECT)
 
 #define MY_VPN_EDITOR_GET_PRIVATE(o) (my_vpn_editor_get_instance_private ((MyVpnEditor*)o))
 
+/* Forward declarations */
+static void my_vpn_editor_interface_init (NMVpnEditorInterface *iface);
+static GObject *get_widget (NMVpnEditor *iface);
+static gboolean update_connection (NMVpnEditor *iface, NMConnection *connection, GError **error);
+
 static void
 my_vpn_editor_init (MyVpnEditor *self)
 {
@@ -48,6 +53,15 @@ my_vpn_editor_class_init (MyVpnEditorClass *klass)
 	g_message("my_vpn_editor_class_init");
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 	object_class->dispose = dispose;
+
+	/* Регистрируем интерфейс NMVpnEditor */
+	g_type_add_interface_static (MY_VPN_TYPE_EDITOR,
+	                           NM_TYPE_VPN_EDITOR,
+	                           &(const GInterfaceInfo) {
+	                               .interface_init = (GInterfaceInitFunc) my_vpn_editor_interface_init,
+	                               .interface_finalize = NULL,
+	                               .interface_data = NULL
+	                           });
 }
 
 static GObject *
@@ -112,10 +126,6 @@ my_vpn_editor_interface_init (NMVpnEditorInterface *iface)
 	iface->get_widget = get_widget;
 	iface->update_connection = update_connection;
 }
-
-G_DEFINE_TYPE_EXTENDED (MyVpnEditor, my_vpn_editor, G_TYPE_OBJECT, 0,
-                        G_IMPLEMENT_INTERFACE (NM_TYPE_VPN_EDITOR,
-                                               my_vpn_editor_interface_init))
 
 static void
 stuff_changed_cb (GtkWidget *widget, gpointer user_data)

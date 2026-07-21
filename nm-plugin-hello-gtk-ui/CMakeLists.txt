@@ -86,24 +86,28 @@ set(GTK4_SRC
     ${CMAKE_CURRENT_BINARY_DIR}/resources.c
 )
 
-add_library(nm-gtk4-vpn-plugin-helloworld-editor MODULE ${GTK4_SRC})
+# add_library(nm-gtk4-vpn-plugin-helloworld-editor MODULE ${GTK4_SRC})
+add_library(nm-vpn-plugin-helloworld MODULE ${GTK4_SRC})
 
-target_include_directories(nm-gtk4-vpn-plugin-helloworld-editor PRIVATE
+# target_include_directories(nm-gtk4-vpn-plugin-helloworld-editor PRIVATE
+target_include_directories(nm-vpn-plugin-helloworld PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     shared/
     shared/nm-utils
 )
 
-target_link_libraries(nm-gtk4-vpn-plugin-helloworld-editor PRIVATE 
+target_link_libraries(nm-vpn-plugin-helloworld PRIVATE 
     nm-utils
     PkgConfig::GTK4 
     PkgConfig::LIBM
     PkgConfig::LIBNMA
 )
 
-set_target_properties(nm-gtk4-vpn-plugin-helloworld-editor PROPERTIES
-    OUTPUT_NAME "nm-gtk4-vpn-plugin-helloworld-editor"
+#set_target_properties(nm-gtk4-vpn-plugin-helloworld-editor PROPERTIES
+set_target_properties(nm-vpn-plugin-helloworld PROPERTIES
+	#    OUTPUT_NAME "nm-gtk4-vpn-plugin-helloworld-editor"
+    OUTPUT_NAME "nm-vpn-plugin-helloworld"
     PREFIX "lib"
 )
 
@@ -113,10 +117,3 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/nm-helloworld-service.name
     @ONLY
 )
-
-# Установка
-install(TARGETS nm-gtk4-vpn-plugin-helloworld-editor
-        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/NetworkManager/)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nm-helloworld-service.name 
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/NetworkManager/VPN/)

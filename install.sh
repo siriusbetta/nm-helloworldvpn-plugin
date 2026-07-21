@@ -117,15 +117,12 @@ if [ "$OS_NAME"=="arch" ] && [ "$DE_NAME"=="gnome" ]; then
 	fi
 fi
 
-UI_FILE1="./nm-plugin-hello-gtk-ui/build/libnm-gtk4-vpn-plugin-helloworld-editor.so"
 UI_FILE2="./nm-plugin-hello-gtk-ui/build/libnm-vpn-plugin-helloworld.so"
 
-if [ -f "$UI_FILE1" ] && [ -f "$UI_FILE2" ]; then
+if [ -f "$UI_FILE2" ]; then
   if [ -n "$UI_DIR" ]; then
     echo "Установка UI библиотеки"
-    cp "$UI_FILE1" "$UI_DIR"
     cp "$UI_FILE2" "$UI_DIR"
-    chmod 755 "$UI_DIR/libnm-gtk4-vpn-plugin-helloworld-editor.so"
     chmod 755 "$UI_DIR/libnm-vpn-plugin-helloworld.so"
   else
     echo "Директория для UI библиотеки не найдена"
