@@ -17,14 +17,15 @@ typedef struct {
 	GtkWidget *tls_user_cert_chooser;
 } MyVpnEditorPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (MyVpnEditor, my_vpn_editor, G_TYPE_OBJECT)
+static void my_vpn_editor_interface_init (NMVpnEditorInterface *iface);
+
+/* G_DEFINE_TYPE_WITH_CODE — определяет тип И регистрирует интерфейс одновременно */
+G_DEFINE_TYPE_WITH_CODE (MyVpnEditor, my_vpn_editor, G_TYPE_OBJECT,
+                         G_ADD_PRIVATE (MyVpnEditor)
+                         G_IMPLEMENT_INTERFACE (NM_TYPE_VPN_EDITOR,
+                                                my_vpn_editor_interface_init))
 
 #define MY_VPN_EDITOR_GET_PRIVATE(o) (my_vpn_editor_get_instance_private ((MyVpnEditor*)o))
-
-/* Forward declarations */
-static void my_vpn_editor_interface_init (NMVpnEditorInterface *iface);
-static GObject *get_widget (NMVpnEditor *iface);
-static gboolean update_connection (NMVpnEditor *iface, NMConnection *connection, GError **error);
 
 static void
 my_vpn_editor_init (MyVpnEditor *self)
@@ -53,25 +54,24 @@ my_vpn_editor_class_init (MyVpnEditorClass *klass)
 	g_message("my_vpn_editor_class_init");
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 	object_class->dispose = dispose;
-
-	/* Регистрируем интерфейс NMVpnEditor */
-	g_type_add_interface_static (MY_VPN_TYPE_EDITOR,
-	                           NM_TYPE_VPN_EDITOR,
-	                           &(const GInterfaceInfo) {
-	                               .interface_init = (GInterfaceInitFunc) my_vpn_editor_interface_init,
-	                               .interface_finalize = NULL,
-	                               .interface_data = NULL
-	                           });
 }
 
 static GObject *
 get_widget (NMVpnEditor *iface)
 {
-	g_message("get_widget");
-	MyVpnEditor *self = MY_VPN_EDITOR (iface);
-	MyVpnEditorPrivate *priv = MY_VPN_EDITOR_GET_PRIVATE (self);
-
-	return G_OBJECT (priv->widget);
+    g_message("get_widget called");
+    MyVpnEditor *self = MY_VPN_EDITOR (iface);
+    MyVpnEditorPrivate *priv = MY_VPN_EDITOR_GET_PRIVATE (self);
+    
+    if (!priv->widget) {
+        g_message("get_widget: widget is NULL!");
+        return NULL;
+    }
+    
+    g_message("get_widget returning: %s", G_OBJECT_TYPE_NAME(priv->widget));
+    g_message("get_widget widget visible: %d", gtk_widget_get_visible(priv->widget));
+    
+    return G_OBJECT (priv->widget);
 }
 
 static gboolean

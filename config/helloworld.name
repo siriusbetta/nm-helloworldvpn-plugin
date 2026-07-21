@@ -7,6 +7,6 @@ program=/usr/local/libexec/helloworld-dbus.py
 plugin=libnm-vpn-plugin-helloworld.so
 
 [GNOME]
-properties=libnm-vpn-plugin-helloworld.so
+properties=nm-vpn-plugin-helloworld
 supports-external-ui-mode=true
 supports-hints=true
