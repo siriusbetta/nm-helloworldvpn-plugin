@@ -1,144 +1,67 @@
-#!/bin/bash
-# Скрипт установки nm-helloworldvpn-plugin
-# Запускать из корневой директории репозитория с правами root: sudo ./install.sh
+#!/usr/bin/env bash
+set -euo pipefail
 
-set -e
-
-# 1. Проверка прав суперпользователя
-if [ "$EUID" -ne 0 ]; then
-    echo "❌ Пожалуйста, запустите этот скрипт от имени root (используйте sudo)."
+if [[ ${EUID} -ne 0 ]]; then
+    echo "Запустите install.sh от имени root (sudo)." >&2
     exit 1
 fi
 
-echo "🚀 Начало установки nm-helloworldvpn-plugin..."
+ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+CONFIG_DIR="$ROOT_DIR/config"
+GTK_BUILD_DIR="$ROOT_DIR/nm-plugin-hello-gtk-ui/build"
+QT_BUILD_DIR="$ROOT_DIR/nm-plugin-hello-qt6-ui/build"
 
-# 2. Установка зависимостей (Python D-Bus и GI)
-echo "📦 Проверка и установка зависимостей..."
-if command -v apt-get &> /dev/null; then
-    apt-get update -qq
-    apt-get install -y python3-dbus python3-gi
-elif command -v pacman &> /dev/null; then
-    pacman -Sy --noconfirm python-dbus python-gobject
-else
-    echo "⚠️ Менеджер пакетов не распознан. Убедитесь, что пакеты python3-dbus и python3-gi (или их аналоги) установлены вручную."
+source /etc/os-release
+OS_ID=${ID:-unknown}
+DESKTOP=${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}}
+DESKTOP=${DESKTOP,,}
+
+nm_libdir=$(pkg-config --variable=libdir libnm 2>/dev/null || true)
+if [[ -z "$nm_libdir" ]]; then
+    nm_libdir=/usr/lib
 fi
+NM_UI_DIR="$nm_libdir/NetworkManager"
 
-# 3. Установка файлов конфигурации и службы
-echo "📁 Копирование файлов конфигурации..."
-mkdir -p /etc/NetworkManager/system-connections
-mkdir -p /usr/lib/NetworkManager/VPN
-mkdir -p /usr/share/dbus-1/system-services
-mkdir -p /etc/dbus-1/system.d          # ← добавить эту строку
-mkdir -p /usr/local/libexec
-cp ./config/helloworld-vpn.nmconnection /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection 2>/dev/null || \
-cp ./helloworld-vpn.nmconnection /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
-chmod 600 /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
-chown root:root /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
-
-cp ./config/helloworld.name /usr/lib/NetworkManager/VPN/helloworld.name 2>/dev/null || \
-cp ./helloworld.name /usr/lib/NetworkManager/VPN/helloworld.name
-
-cp ./config/org.freedesktop.NetworkManager.helloworld.service /usr/share/dbus-1/system-services/org.freedesktop.NetworkManager.helloworld.service 2>/dev/null || \
-cp ./org.freedesktop.NetworkManager.helloworld.service /usr/share/dbus-1/system-services/org.freedesktop.NetworkManager.helloworld.service
-
-cp ./config/org.freedesktop.NetworkManager.helloworld.conf /etc/dbus-1/system.d/org.freedesktop.NetworkManager.helloworld.conf 2>/dev/null || \
-cp ./org.freedesktop.NetworkManager.helloworld.conf /etc/dbus-1/system.d/org.freedesktop.NetworkManager.helloworld.conf
-
-# 4. Перезагрузка конфигурации D-Bus
-echo "🔄 Перезагрузка конфигурации D-Bus..."
-dbus-send --system --type=method_call --dest=org.freedesktop.DBus / org.freedesktop.DBus.ReloadConfig
-
-# 5. Установка DBus скрипта
-echo "📁 Копирование DBus скрипта..."
-cp ./src/helloworld-dbus.py /usr/local/libexec/helloworld-dbus.py 2>/dev/null || \
-cp ./helloworld-dbus.py /usr/local/libexec/helloworld-dbus.py
-chmod +x /usr/local/libexec/helloworld-dbus.py
-chown root:root /usr/local/libexec/helloworld-dbus.py
-
-UI_DIR=""
-
-if [ -f /etc/os-release ]; then
-	source /etc/os-release
-	echo "Дистрибутив: $NAME"
-else
-	echo "Файл /ect/os-release не найден"
+qt_plugin_dir=$(qtpaths6 --plugin-dir 2>/dev/null || true)
+if [[ -z "$qt_plugin_dir" ]]; then
+    case "$OS_ID" in
+        debian|ubuntu) qt_plugin_dir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || echo x86_64-linux-gnu)/qt6/plugins" ;;
+        *) qt_plugin_dir=/usr/lib/qt6/plugins ;;
+    esac
 fi
+QT_UI_DIR="$qt_plugin_dir/plasma/network/vpn"
 
-OS_NAME="$ID"
+install -d -m 755 /etc/NetworkManager/system-connections \
+    /usr/lib/NetworkManager/VPN /usr/share/dbus-1/system-services \
+    /etc/dbus-1/system.d /usr/local/libexec
+install -m 600 -o root -g root "$CONFIG_DIR/helloworld-vpn.nmconnection" \
+    /etc/NetworkManager/system-connections/helloworld-vpn.nmconnection
+install -m 644 "$CONFIG_DIR/helloworld.name" /usr/lib/NetworkManager/VPN/helloworld.name
+install -m 644 "$CONFIG_DIR/org.freedesktop.NetworkManager.helloworld.service" \
+    /usr/share/dbus-1/system-services/org.freedesktop.NetworkManager.helloworld.service
+install -m 644 "$CONFIG_DIR/org.freedesktop.NetworkManager.helloworld.conf" \
+    /etc/dbus-1/system.d/org.freedesktop.NetworkManager.helloworld.conf
+install -m 755 "$ROOT_DIR/src/helloworld-dbus.py" /usr/local/libexec/helloworld-dbus.py
+install -m 755 "$CONFIG_DIR/helloworld-auth-dialog.py" /usr/local/libexec/nm-helloworld-auth-dialog
 
-if [ "$ID" = "arch" ] || [ "$ID" = "manjaro" ]; then
-	OS_NAME="arch"
-fi
-
-DE_NAME=""
-DE=$(echo "$XDG_CURRENT_DESKTOP" | tr '[:upper:]' '[:lower:]')
-
-case "$DE" in
+case "$DESKTOP" in
     *gnome*)
-        echo "Запущен GNOME"
-	DE_NAME="gnome"
+        [[ -d "$NM_UI_DIR" ]] || { echo "Не найден каталог GNOME UI: $NM_UI_DIR" >&2; exit 1; }
+        install -m 755 "$GTK_BUILD_DIR/libnm-vpn-plugin-helloworld.so" "$NM_UI_DIR/"
+        install -m 755 "$GTK_BUILD_DIR/libnm-vpn-plugin-helloworld-editor.so" "$NM_UI_DIR/"
+        install -m 755 "$GTK_BUILD_DIR/libnm-gtk4-vpn-plugin-helloworld-editor.so" "$NM_UI_DIR/"
         ;;
     *kde*|*plasma*)
-        echo "Запущен KDE Plasma"
-	DE_NAME="kde-plasma"
-        ;;
-    *xfce*)
-        echo "Запущен XFCE"
-	DE_NAME="xfce"
-        ;;
-    *mate*)
-        echo "Запущен MATE"
-	DE_NAME="mate"
-        ;;
-    *cinnamon*)
-        echo "Запущен Cinnamon"
-	DE_NAME="cinnamon"
+        install -d -m 755 "$QT_UI_DIR"
+        install -m 755 "$QT_BUILD_DIR/libplasmanetworkmanagement_helloworldui.so" "$QT_UI_DIR/"
         ;;
     *)
-        echo "Окружение не определено или используется консоль: $XDG_CURRENT_DESKTOP"
+        echo "Окружение не определено; UI-библиотеки не устанавливаются." >&2
         ;;
 esac
 
-if [ "$OS_NAME"=="debian" ] && [ "$DE_NAME"=="kde-plasma" ]; then
-	if [ -d "/usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/" ]; then
-	  UI_DIR="/usr/lib/x86_64-linux-gnu/qt6/plugins/plasma/network/vpn/"
-	fi
-fi
-
-if [ "$OS_NAME"=="arch" ] && [ "$DE_NAME"=="kde-plasma" ]; then
-	if [ -d "/usr/lib/qt6/plugins/plasma/network/vpn/" ]; then
-	  UI_DIR="/usr/lib/qt6/plugins/plasma/network/vpn/"
-	fi
-fi
-
-if [ "$OS_NAME"=="arch" ] && [ "$DE_NAME"=="gnome" ]; then
-	if [ -d "/usr/lib/NetworkManager/" ]; then
-	  UI_DIR="/usr/lib/NetworkManager/"
-	fi
-fi
-
-UI_FILE1="./nm-plugin-hello-gtk-ui/build/libnm-gtk4-vpn-plugin-helloworld-editor.so"
-UI_FILE2="./nm-plugin-hello-gtk-ui/build/libnm-vpn-plugin-helloworld.so"
-
-if [ -f "$UI_FILE1" ] && [ -f "$UI_FILE2" ]; then
-  if [ -n "$UI_DIR" ]; then
-    echo "Установка UI библиотеки"
-    cp "$UI_FILE1" "$UI_DIR"
-    cp "$UI_FILE2" "$UI_DIR"
-    chmod 755 "$UI_DIR/libnm-gtk4-vpn-plugin-helloworld-editor.so"
-    chmod 755 "$UI_DIR/libnm-vpn-plugin-helloworld.so"
-  else
-    echo "Директория для UI библиотеки не найдена"
-  fi
-else
-  echo "UI библиотека не найдена, установка UI пропущена"
-fi
-
-
-# 8. Перезапуск NetworkManager и перезагрузка соединений
-echo "🔄 Перезапуск NetworkManager..."
+dbus-send --system --type=method_call --dest=org.freedesktop.DBus \
+    / org.freedesktop.DBus.ReloadConfig
 systemctl restart NetworkManager
 nmcli connection reload
-
-echo "✅ Установка успешно завершена!"
-echo "💡 Для подключения используйте команду: nmcli connection up helloworld-vpn"
+echo "Установка завершена для ОС $OS_ID, окружения ${DESKTOP:-unknown}."

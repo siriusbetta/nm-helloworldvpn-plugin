@@ -33,4 +33,5 @@ private:
     QLineEdit* lineEditPath;
     QPushButton* buttonBrowse;
     QPushButton* buttonShowName;
+    QString m_pathKey = QStringLiteral("config");
 };
