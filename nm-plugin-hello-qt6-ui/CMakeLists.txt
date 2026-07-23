@@ -145,3 +145,10 @@ target_link_libraries(plasmanetworkmanagement_helloworldui
     KF6::WidgetsAddons
 )
 
+set_target_properties(plasmanetworkmanagement_helloworldui PROPERTIES
+    PREFIX ""
+)
+
+install(TARGETS plasmanetworkmanagement_helloworldui
+    LIBRARY DESTINATION ${KDE_INSTALL_PLUGINDIR}/plasma/network/vpn
+)

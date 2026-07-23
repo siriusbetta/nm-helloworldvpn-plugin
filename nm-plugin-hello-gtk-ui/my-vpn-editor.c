@@ -1,114 +1,282 @@
 #include "my-vpn-editor.h"
+#include <gmodule.h>
 #include <gtk/gtk.h>
+#include <string.h>
 
-#define MY_VPN_SERVICE_TYPE "org.example.myvpn"
-#define MY_VPN_KEY_CONFIG_PATH "config_path"
+#define HELLOWORLD_VPN_SERVICE_TYPE "org.freedesktop.NetworkManager.helloworld"
+#define HELLOWORLD_KEY_CONFIG "config"
+#define HELLOWORLD_KEY_SERVICE "service"
 
-struct _MyVpnEditor {
-    GObject parent_instance;
-    FileChooserWidget *file_widget;
+#if !GTK_CHECK_VERSION(4, 0, 0)
+#define gtk_editable_get_text(editable) gtk_entry_get_text(GTK_ENTRY(editable))
+#define gtk_editable_set_text(editable, text) \
+    gtk_entry_set_text(GTK_ENTRY(editable), (text))
+#endif
+
+struct _HelloWorldVpnEditor {
+    GObject parent;
     NMConnection *connection;
+    GtkWidget *widget;
+    GtkWidget *path_entry;
+    const char *path_key;
 };
 
-/* Прототипы */
-static void nm_vpn_editor_iface_init(NMVpnEditorInterface *iface);
-static void my_vpn_editor_class_init(MyVpnEditorClass *klass);
+static void helloworld_vpn_editor_interface_init(NMVpnEditorInterface *iface);
+static void on_file_selected(GtkNativeDialog *dialog, gint response_id, gpointer user_data);
+static void on_browse_clicked(GtkWidget *button, HelloWorldVpnEditor *self);
+static void on_path_changed(GtkEditable *editable, HelloWorldVpnEditor *self);
 
-G_DEFINE_TYPE_WITH_CODE(MyVpnEditor, my_vpn_editor, G_TYPE_OBJECT,
-                        G_IMPLEMENT_INTERFACE(NM_TYPE_VPN_EDITOR, nm_vpn_editor_iface_init))
+G_DEFINE_TYPE_WITH_CODE(
+    HelloWorldVpnEditor,
+    helloworld_vpn_editor,
+    G_TYPE_OBJECT,
+    G_IMPLEMENT_INTERFACE(NM_TYPE_VPN_EDITOR, helloworld_vpn_editor_interface_init)
+)
 
-/* === Сигналы и вспомогательные функции === */
+static void
+box_append(GtkBox *box, GtkWidget *child, gboolean expand)
+{
+#if GTK_CHECK_VERSION(4, 0, 0)
+    gtk_box_append(box, child);
+#else
+    gtk_box_pack_start(box, child, expand, expand, 0);
+#endif
+}
 
-static void on_path_changed(FileChooserWidget *widget, const gchar *path, gpointer user_data) {
-    MyVpnEditor *self = MY_VPN_EDITOR(user_data);
-    NMSettingVpn *s_vpn = nm_connection_get_setting_vpn(self->connection);
-    
-    if (!s_vpn) {
-        s_vpn = NM_SETTING_VPN(nm_setting_vpn_new());
-        g_object_set(s_vpn, NM_SETTING_VPN_SERVICE_TYPE, MY_VPN_SERVICE_TYPE, NULL);
-        nm_connection_add_setting(self->connection, NM_SETTING(s_vpn));
-    }
-    
-    if (path && *path)
-        nm_setting_vpn_add_data_item(s_vpn, MY_VPN_KEY_CONFIG_PATH, path);
-    else
-        nm_setting_vpn_remove_data_item(s_vpn, MY_VPN_KEY_CONFIG_PATH);
-        
+static void
+unref_user_data(gpointer data, GClosure *closure)
+{
+    g_object_unref(data);
+}
+
+static void
+on_path_changed(GtkEditable *editable, HelloWorldVpnEditor *self)
+{
+    (void) editable;
     g_signal_emit_by_name(self, "changed");
 }
 
-static void load_from_connection(MyVpnEditor *self) {
-    NMSettingVpn *s_vpn = nm_connection_get_setting_vpn(self->connection);
-    if (!s_vpn) return;
-    
-    const gchar *path = nm_setting_vpn_get_data_item(s_vpn, MY_VPN_KEY_CONFIG_PATH);
-    if (path)
-        file_chooser_widget_set_path(self->file_widget, path);
-}
+static void
+on_file_selected(GtkNativeDialog *dialog, gint response_id, gpointer user_data)
+{
+    HelloWorldVpnEditor *self = HELLOWORLD_VPN_EDITOR(user_data);
+    GFile *file = NULL;
 
-/* === Реализация интерфейса NMVpnEditor === */
+    if (response_id == GTK_RESPONSE_ACCEPT)
+        file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dialog));
 
-static GObject *get_widget(NMVpnEditor *iface) {
-    MyVpnEditor *self = MY_VPN_EDITOR(iface);
-    return G_OBJECT(self->file_widget);
-}
-
-// В NM 1.40+ валидация выполняется здесь, check_validity удалён
-static gboolean update_connection(NMVpnEditor *iface, NMConnection *connection, GError **error) {
-    MyVpnEditor *self = MY_VPN_EDITOR(iface);
-    const gchar *path = file_chooser_widget_get_path(self->file_widget);
-
-    if (!path || !*path) {
-        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED, "Файл конфигурации не выбран");
-        return FALSE;
-    }
-    if (!g_file_test(path, G_FILE_TEST_EXISTS)) {
-        g_set_error(error, G_IO_ERROR, G_IO_ERROR_FAILED, "Файл не существует: %s", path);
-        return FALSE;
+    if (file && self->path_entry) {
+        char *path = g_file_get_path(file);
+        if (path) {
+            gtk_editable_set_text(GTK_EDITABLE(self->path_entry), path);
+            g_free(path);
+        }
     }
 
-    NMSettingVpn *s_vpn = nm_connection_get_setting_vpn(connection);
+    g_clear_object(&file);
+    g_object_unref(dialog);
+}
+
+static void
+on_browse_clicked(GtkWidget *button, HelloWorldVpnEditor *self)
+{
+    GtkWindow *parent = NULL;
+    GtkWidget *root;
+    GtkFileChooserNative *dialog;
+
+#if GTK_CHECK_VERSION(4, 0, 0)
+    root = GTK_WIDGET(gtk_widget_get_root(self->widget));
+#else
+    root = gtk_widget_get_toplevel(self->widget);
+#endif
+
+    if (GTK_IS_WINDOW(root))
+        parent = GTK_WINDOW(root);
+
+    dialog = gtk_file_chooser_native_new(
+        "Select Configuration File",
+        parent,
+        GTK_FILE_CHOOSER_ACTION_OPEN,
+        "_Open",
+        "_Cancel"
+    );
+
+    g_signal_connect_data(dialog,
+                          "response",
+                          G_CALLBACK(on_file_selected),
+                          g_object_ref(self),
+                          unref_user_data,
+                          0);
+
+    gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
+}
+
+static void
+fill_connection(NMVpnEditor *editor, NMConnection *connection)
+{
+    NMSettingVpn *s_vpn;
+
+    s_vpn = nm_connection_get_setting_vpn(connection);
     if (!s_vpn) {
         s_vpn = NM_SETTING_VPN(nm_setting_vpn_new());
-        g_object_set(s_vpn, NM_SETTING_VPN_SERVICE_TYPE, MY_VPN_SERVICE_TYPE, NULL);
         nm_connection_add_setting(connection, NM_SETTING(s_vpn));
     }
-    
-    nm_setting_vpn_add_data_item(s_vpn, MY_VPN_KEY_CONFIG_PATH, path);
+
+    nm_setting_vpn_add_data_item(s_vpn, "service-type", HELLOWORLD_VPN_SERVICE_TYPE);
+}
+
+static GObject *
+get_widget(NMVpnEditor *editor)
+{
+    HelloWorldVpnEditor *self = HELLOWORLD_VPN_EDITOR(editor);
+
+    if (!self->widget) {
+        self->widget = g_object_ref_sink(
+            gtk_box_new(GTK_ORIENTATION_VERTICAL, 12)
+        );
+        gtk_widget_set_margin_start(self->widget, 12);
+        gtk_widget_set_margin_end(self->widget, 12);
+        gtk_widget_set_margin_top(self->widget, 12);
+        gtk_widget_set_margin_bottom(self->widget, 12);
+
+        GtkWidget *label = gtk_label_new("Hello World VPN Configuration");
+        gtk_widget_set_halign(label, GTK_ALIGN_START);
+        box_append(GTK_BOX(self->widget), label, FALSE);
+
+        GtkWidget *info = gtk_label_new("Please select a configuration file:");
+        gtk_widget_set_halign(info, GTK_ALIGN_START);
+        box_append(GTK_BOX(self->widget), info, FALSE);
+
+        GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+        box_append(GTK_BOX(self->widget), box, FALSE);
+
+        self->path_entry = gtk_entry_new();
+        gtk_widget_set_hexpand(self->path_entry, TRUE);
+        box_append(GTK_BOX(box), self->path_entry, TRUE);
+
+        GtkWidget *button = gtk_button_new_with_label("Browse...");
+        g_signal_connect(button, "clicked", G_CALLBACK(on_browse_clicked), self);
+        box_append(GTK_BOX(box), button, FALSE);
+
+        /* Prefer config. Use service only when config is absent. */
+        NMSettingVpn *s_vpn = nm_connection_get_setting_vpn(self->connection);
+        if (s_vpn) {
+            const char *path = nm_setting_vpn_get_data_item(s_vpn, HELLOWORLD_KEY_CONFIG);
+
+            if (path) {
+                self->path_key = HELLOWORLD_KEY_CONFIG;
+            } else {
+                path = nm_setting_vpn_get_data_item(s_vpn, HELLOWORLD_KEY_SERVICE);
+                if (path)
+                    self->path_key = HELLOWORLD_KEY_SERVICE;
+            }
+
+            if (path) {
+                gtk_editable_set_text(GTK_EDITABLE(self->path_entry), path);
+            }
+        }
+
+        g_signal_connect(self->path_entry,
+                         "changed",
+                         G_CALLBACK(on_path_changed),
+                         self);
+
+#if !GTK_CHECK_VERSION(4, 0, 0)
+        gtk_widget_show_all(self->widget);
+#endif
+    }
+
+    return G_OBJECT(self->widget);
+}
+
+static gboolean
+update_connection(NMVpnEditor *editor, NMConnection *connection, GError **error)
+{
+    HelloWorldVpnEditor *self = HELLOWORLD_VPN_EDITOR(editor);
+    NMSettingVpn *s_vpn;
+    const char *path;
+
+    s_vpn = nm_connection_get_setting_vpn(connection);
+    if (!s_vpn) {
+        s_vpn = NM_SETTING_VPN(nm_setting_vpn_new());
+        nm_connection_add_setting(connection, NM_SETTING(s_vpn));
+    }
+
+    nm_setting_vpn_add_data_item(s_vpn, "service-type", HELLOWORLD_VPN_SERVICE_TYPE);
+
+    path = gtk_editable_get_text(GTK_EDITABLE(self->path_entry));
+    if (path && *path != '\0') {
+        if (g_file_test(path, G_FILE_TEST_IS_REGULAR)) {
+            nm_setting_vpn_remove_data_item(s_vpn, self->path_key);
+            nm_setting_vpn_add_data_item(s_vpn, self->path_key, path);
+        } else {
+            g_set_error(error, NM_VPN_PLUGIN_ERROR, NM_VPN_PLUGIN_ERROR_BAD_ARGUMENTS,
+                        "The specified configuration file does not exist or is not a regular file.");
+            return FALSE;
+        }
+    } else {
+        g_set_error(error, NM_VPN_PLUGIN_ERROR, NM_VPN_PLUGIN_ERROR_BAD_ARGUMENTS,
+                    "A configuration file must be specified.");
+        return FALSE;
+    }
+
     return TRUE;
 }
 
-/* === GObject Boilerplate === */
-
-static void my_vpn_editor_class_init(MyVpnEditorClass *klass) {
-    // В данной реализации class_init не требуется, но должен быть определён
-    // для G_DEFINE_TYPE_WITH_CODE
-}
-
-static void my_vpn_editor_init(MyVpnEditor *self) {
-    self->file_widget = FILE_CHOOSER_WIDGET(file_chooser_widget_new());
-    g_signal_connect(self->file_widget, "path-changed", G_CALLBACK(on_path_changed), self);
-}
-
-/* Обязательная функция инициализации интерфейса */
-static void nm_vpn_editor_iface_init(NMVpnEditorInterface *iface) {
+static void
+helloworld_vpn_editor_interface_init(NMVpnEditorInterface *iface)
+{
     iface->get_widget = get_widget;
     iface->update_connection = update_connection;
-    // iface->suggest_address оставляем NULL (опционально)
 }
 
-NMVpnEditor *my_vpn_editor_new(NMConnection *connection, GError **error) {
-    g_return_val_if_fail(NM_IS_CONNECTION(connection), NULL);
-    
-    MyVpnEditor *self = g_object_new(MY_VPN_TYPE_EDITOR, NULL);
+static void
+helloworld_vpn_editor_init(HelloWorldVpnEditor *self)
+{
+    self->connection = NULL;
+    self->widget = NULL;
+    self->path_entry = NULL;
+    self->path_key = HELLOWORLD_KEY_CONFIG;
+}
+
+static void
+helloworld_vpn_editor_dispose(GObject *object)
+{
+    HelloWorldVpnEditor *self = HELLOWORLD_VPN_EDITOR(object);
+
+    g_clear_object(&self->connection);
+    self->path_entry = NULL;
+    g_clear_object(&self->widget);
+
+    G_OBJECT_CLASS(helloworld_vpn_editor_parent_class)->dispose(object);
+}
+
+static void
+helloworld_vpn_editor_class_init(HelloWorldVpnEditorClass *klass)
+{
+    GObjectClass *object_class = G_OBJECT_CLASS(klass);
+    object_class->dispose = helloworld_vpn_editor_dispose;
+}
+
+NMVpnEditor *
+helloworld_vpn_editor_new(NMConnection *connection, GError **error)
+{
+    HelloWorldVpnEditor *self;
+
+    self = g_object_new(HELLOWORLD_TYPE_VPN_EDITOR, NULL);
+    if (!self) {
+        g_set_error(error, NM_VPN_PLUGIN_ERROR, NM_VPN_PLUGIN_ERROR_FAILED,
+                    "Failed to create editor object");
+        return NULL;
+    }
+
     self->connection = g_object_ref(connection);
-    load_from_connection(self);
-    
+
     return NM_VPN_EDITOR(self);
 }
 
-static void my_vpn_editor_dispose(GObject *obj) {
-    MyVpnEditor *self = MY_VPN_EDITOR(obj);
-    g_clear_object(&self->connection);
-    G_OBJECT_CLASS(my_vpn_editor_parent_class)->dispose(obj);
+G_MODULE_EXPORT NMVpnEditor *
+nm_vpn_editor_factory_helloworld(NMConnection *connection, GError **error)
+{
+    return helloworld_vpn_editor_new(connection, error);
 }

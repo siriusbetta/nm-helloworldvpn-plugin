@@ -1,13 +1,14 @@
 #pragma once
 
-#include <NetworkManager.h>  // ← ЕДИНСТВЕННЫЙ правильный заголовок для libnm
-#include "file-chooser-widget.h"
+#include <NetworkManager.h>
 
 G_BEGIN_DECLS
 
-#define MY_VPN_TYPE_EDITOR (my_vpn_editor_get_type())
-G_DECLARE_FINAL_TYPE(MyVpnEditor, my_vpn_editor, MY_VPN, EDITOR, GObject)
+#define HELLOWORLD_TYPE_VPN_EDITOR (helloworld_vpn_editor_get_type())
+G_DECLARE_FINAL_TYPE(HelloWorldVpnEditor, helloworld_vpn_editor, HELLOWORLD, VPN_EDITOR, GObject)
 
-NMVpnEditor *my_vpn_editor_new(NMConnection *connection, GError **error);
+NMVpnEditor *helloworld_vpn_editor_new(NMConnection *connection, GError **error);
+NMVpnEditor *nm_vpn_editor_factory_helloworld(NMConnection *connection,
+                                              GError **error);
 
 G_END_DECLS

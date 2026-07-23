@@ -31,12 +31,24 @@ HelloWorldWidget::HelloWorldWidget(const NetworkManager::VpnSetting::Ptr &settin
 
     setLayout(mainLayout);
     setWindowTitle("Выбор файла");
-
+    loadConfig(setting);
 }
 
 void HelloWorldWidget::loadConfig(const NetworkManager::Setting::Ptr &setting)
 {
     m_setting = setting.staticCast<NetworkManager::VpnSetting>();
+
+    const QVariantMap data = m_setting->data();
+    QString path = data.value(QStringLiteral("config")).toString();
+    if (!path.isEmpty()) {
+        m_pathKey = QStringLiteral("config");
+    } else {
+        path = data.value(QStringLiteral("service")).toString();
+        if (!path.isEmpty())
+            m_pathKey = QStringLiteral("service");
+    }
+
+    lineEditPath->setText(path);
 }
 
 void HelloWorldWidget::loadSecrets(const NetworkManager::Setting::Ptr &setting)
@@ -51,6 +63,10 @@ QVariantMap HelloWorldWidget::setting() const
     QVariantMap data;
     data.insert(QStringLiteral("gateway"), QStringLiteral("127.0.0.1"));
 
+    const QString path = lineEditPath->text();
+    if (!path.isEmpty())
+        data.insert(m_pathKey, path);
+
     result.insert(QStringLiteral("service-type"), QStringLiteral("org.freedesktop.NetworkManager.helloworld"));
     result.insert(QStringLiteral("data"), data);
 
@@ -61,6 +77,7 @@ void HelloWorldWidget::onBrowseClicked() {
 	QString filePath = QFileDialog::getOpenFileName(this, "Выберите файл");
 	if (!filePath.isEmpty()) {
 	    lineEditPath->setText(filePath);
+	    Q_EMIT changed();
 	}
 }
 
@@ -73,4 +90,3 @@ void HelloWorldWidget::onShowNameClicked() {
 	QString fileName = QFileInfo(filePath).fileName();
 	QMessageBox::information(this, "Имя файла", QString("Выбран файл:\n<b>%1</b>").arg(fileName));
 }
-
